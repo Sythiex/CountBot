@@ -10,10 +10,11 @@ from discord.ui import View
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True)
 bot.author_id = 194922571584634883
-views = []
+views = []  # list of active PartyViews
 inflect_engine = inflect.engine()
 pat_count = 0
 last_pat_message = None
+last_pat_command_message = None
 
 
 @bot.event
@@ -78,11 +79,13 @@ async def cancelall(ctx: Context):
 @bot.command()
 async def pat(ctx: Context):
     """Pat CountBot"""
-    global pat_count, last_pat_message
+    global pat_count, last_pat_message, last_pat_command_message
     if last_pat_message is not None:
         await last_pat_message.delete()
-    await ctx.message.delete()
+    if last_pat_command_message is not None:
+        await last_pat_command_message.delete()
     pat_count += 1
+    last_pat_command_message = ctx.message
     last_pat_message = await ctx.channel.send(content=f"{inflect_engine.number_to_words(pat_count).capitalize()} {'pat' if pat_count == 1 else 'pats'}, ha ha ha!")
     print(f'patter: {ctx.author}')
 
