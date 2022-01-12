@@ -10,6 +10,7 @@ from discord.ui import View
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True)
 bot.author_id = 194922571584634883
+admin_role_id = 194927736240865281
 views = []  # list of active PartyViews
 inflect_engine = inflect.engine()
 pat_count = 0
@@ -54,26 +55,29 @@ async def test(ctx: Context):
 
 @bot.command(aliases=['start', 'startparty'])
 async def forcestart(ctx: Context):
-    """Start all parties in this channel"""
+    """Start your parties in this channel"""
     for view in list(views):
-        if ctx.channel.id == view.original_message.channel.id:
-            await view.start_party()
+        if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
+            if ctx.author.id == view.party_owner.id or ctx.author.get_role(admin_role_id) is not None:  # if command user is the party owner or admin
+                await view.start_party()
 
 
 @bot.command()
 async def cancel(ctx: Context):
-    """Cancel all parties in this channel"""
+    """Cancel your parties in this channel"""
     for view in list(views):
-        if ctx.channel.id == view.original_message.channel.id:
-            await view.cancel_lfg()
+        if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
+            if ctx.author.id == view.party_owner.id or ctx.author.get_role(admin_role_id) is not None:  # if command user is the party owner or admin
+                await view.cancel_lfg()
 
 
 @bot.command()
 async def cancelall(ctx: Context):
-    """Cancel all parties in this server"""
-    for view in list(views):
-        if ctx.guild.id == view.original_message.guild.id:
-            await view.cancel_lfg()
+    """[ADMIN ONLY] Cancel all parties in this server"""
+    if ctx.author.get_role(admin_role_id) is not None:  # if command user is admin
+        for view in list(views):
+            if ctx.guild.id == view.original_message.guild.id:  # if view is in the same server
+                await view.cancel_lfg()
 
 
 @bot.command()
@@ -91,13 +95,14 @@ async def pat(ctx: Context):
 
 
 class PartyView(View):
-    def __init__(self, activity_name: str, party: list[Member], party_size: int, role: str, embed: Embed):
+    def __init__(self, activity_name: str, party: list[Member], party_size: int, role: str, embed: Embed, party_owner: Member):
         super().__init__(timeout=7200)  # 2 hours
         self.activity_name = activity_name
         self.party = party
         self.party_size = party_size
         self.role = role
         self.embed = embed
+        self.party_owner = party_owner
         self.original_message = None
         add_view(self)
 
@@ -196,7 +201,7 @@ async def start_lfg(ctx: Context, activity_name: str, party_size: int, role: str
         party.append(ctx.author)
     embed = Embed(title='Current Party:', color=embed_color)
     embed = refresh_embed(embed, party, party_size)
-    view = PartyView(activity_name, party, party_size, role, embed)
+    view = PartyView(activity_name, party, party_size, role, embed, ctx.author)
     original_message = await ctx.send(f'{role} Count to {party_size if party_size > 0 else "*yes*"} for {activity_name}', view=view, embed=embed)
     view.set_original_message(original_message)
 
