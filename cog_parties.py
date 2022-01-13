@@ -1,11 +1,14 @@
 from typing import Union
 
 import discord
-import inflect
-from discord import Embed, Colour, Member, Button, Interaction, Message
+from discord import Embed, Colour, Member, Button, Interaction, Message, ApplicationContext
 from discord.ext import commands
-from discord.ext.commands import Context
 from discord.ui import View
+
+guilds = [
+        194927673372442624,  # RELEASE THE KEKEN
+        928771354914873345  # Test
+    ]
 
 
 class PartyCommands(commands.Cog, name='Party Commands'):
@@ -14,14 +17,10 @@ class PartyCommands(commands.Cog, name='Party Commands'):
     def __init__(self, bot):
         self.bot = bot
         self.views = []  # list of active PartyViews
-        self.inflect_engine = inflect.engine()
-        self.pat_count = 0
-        self.last_pat_message = None
-        self.last_pat_command_message = None
 
     # Add new games by creating additional commands. set party_size to 0 to create a party with no player limit
-    @commands.command(aliases=['valrant', 'shootbang'])
-    async def valorant(self, ctx: Context):
+    @commands.slash_command(guild_ids=guilds)
+    async def valorant(self, ctx: ApplicationContext):
         """Start a party for Valorant"""
         activity_name = 'Valorant'
         party_size = 5
@@ -29,8 +28,8 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         color = 0xff4655
         await self.start_lfg(ctx, activity_name, party_size, role, color)
 
-    @commands.command(aliases=['drg', 'rockandstone', 'rocknstone'])
-    async def deeprockgalactic(self, ctx: Context):
+    @commands.slash_command(guild_ids=guilds)
+    async def drg(self, ctx: ApplicationContext):
         """Start a party for Deep Rock Galactic"""
         activity_name = 'Deep Rock Galactic'
         party_size = 4
@@ -38,50 +37,45 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         color = 0xffc400
         await self.start_lfg(ctx, activity_name, party_size, role, color)
 
-    @commands.command()
-    async def test(self, ctx: Context):
-        print('test')
-        activity_name = 'Test'
-        party_size = 0
+    @commands.slash_command(guild_ids=guilds)
+    async def customparty(self, ctx: ApplicationContext, name: str, size: int):
+        """Create a custom party"""
+        activity_name = name
+        party_size = size
         role = ''
         await self.start_lfg(ctx, activity_name, party_size, role)
 
-    @commands.command(aliases=['startparty'])
-    async def start(self, ctx: Context):
+    @commands.slash_command(guild_ids=guilds)
+    async def start(self, ctx: ApplicationContext):
         """Start your parties in this channel"""
         for view in list(self.views):
             if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
                 if ctx.author.id == view.party_owner.id or ctx.author.get_role(self.bot.admin_role_id) is not None:  # if command user is the party owner or admin
-                    await view.start_party()
+                    await view.start_party(ctx.interaction)
+        if not ctx.interaction.response.is_done():
+            await ctx.interaction.response.send_message(content='You do not own any parties in this channel.', ephemeral=True)
 
-    @commands.command()
-    async def cancel(self, ctx: Context):
+    @commands.slash_command(guild_ids=guilds)
+    async def cancel(self, ctx: ApplicationContext):
         """Cancel your parties in this channel"""
         for view in list(self.views):
             if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
                 if ctx.author.id == view.party_owner.id or ctx.author.get_role(self.bot.admin_role_id) is not None:  # if command user is the party owner or admin
-                    await view.cancel_lfg()
+                    await view.cancel_lfg(ctx.interaction)
+        if not ctx.interaction.response.is_done():
+            await ctx.interaction.response.send_message(content='You do not own any parties in this channel.', ephemeral=True)
 
-    @commands.command()
-    async def cancelall(self, ctx: Context):
+    @commands.slash_command(guild_ids=guilds)
+    async def cancelall(self, ctx: ApplicationContext):
         """[ADMIN ONLY] Cancel all parties in this server"""
         if ctx.author.get_role(self.bot.admin_role_id) is not None:  # if command user is admin
             for view in list(self.views):
                 if ctx.guild.id == view.original_message.guild.id:  # if view is in the same server
-                    await view.cancel_lfg()
-
-    @commands.command()
-    async def pat(self, ctx: Context):
-        """Pat CountBot"""
-        if self.last_pat_message is not None:
-            await self.last_pat_message.delete()
-        if self.last_pat_command_message is not None:
-            await self.last_pat_command_message.delete()
-        self.pat_count += 1
-        self.last_pat_command_message = ctx.message
-        self.last_pat_message = await ctx.channel.send(
-            content=f"{self.inflect_engine.number_to_words(self.pat_count).capitalize()} {'pat' if self.pat_count == 1 else 'pats'}, ha ha ha!")
-        print(f'patter: {ctx.author}')
+                    await view.cancel_lfg(ctx.interaction)
+            if not ctx.interaction.response.is_done():
+                await ctx.interaction.response.send_message(content='No parties found.', ephemeral=True)
+        else:
+            await ctx.interaction.response.send_message(content='You do not have permission to use this command.', ephemeral=True)
 
     def add_view(self, view):
         self.views.append(view)
@@ -89,7 +83,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
     def remove_view(self, view):
         self.views.remove(view)
 
-    async def start_lfg(self, ctx: Context, activity_name: str, party_size: int, role: str, embed_color: Union[Colour, int] = Embed.Empty):
+    async def start_lfg(self, ctx: ApplicationContext, activity_name: str, party_size: int, role: str, embed_color: Union[Colour, int] = Embed.Empty):
         """
         |coro|
 
@@ -107,8 +101,8 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         embed = Embed(title='Current Party:', color=embed_color)
         embed = refresh_embed(embed, party, party_size)
         view = PartyCommands.PartyView(self, activity_name, party, party_size, role, embed, ctx.author)
-        original_message = await ctx.send(f'{role} Count to {party_size if party_size > 0 else "*yes*"} for {activity_name}', view=view, embed=embed)
-        view.set_original_message(original_message)
+        await ctx.interaction.response.send_message(f'{role} Count to {party_size if party_size > 0 else "*yes*"} for {activity_name}', view=view, embed=embed)
+        view.set_original_message(await ctx.interaction.original_message())
 
     class PartyView(View):
         def __init__(self, cog, activity_name: str, party: list[Member], party_size: int, role: str, embed: Embed, party_owner: Member):
@@ -171,11 +165,14 @@ class PartyCommands(commands.Cog, name='Party Commands'):
             self.embed = refresh_embed(self.embed, self.party, self.party_size)
             await self.original_message.edit(view=self, embed=self.embed)
 
-        async def start_party(self):
+        async def start_party(self, interaction: Interaction = None):
             """|coro|
 
             Notify the party and end the view"""
-            await self.original_message.channel.send(f'Party for {self.activity_name} is ready! {get_mentions(self.party)}')
+            if interaction is not None:
+                await interaction.response.send_message(f'Party for {self.activity_name} is ready! {get_mentions(self.party)}')
+            else:
+                await self.original_message.channel.send(f'Party for {self.activity_name} is ready! {get_mentions(self.party)}')
             await self.original_message.delete()
             self.stop()
             self.cog.remove_view(self)
@@ -187,13 +184,14 @@ class PartyCommands(commands.Cog, name='Party Commands'):
             await self.original_message.reply(content='Party timed out <:sadcat:823688094167203870>')
             self.cog.remove_view(self)
 
-        async def cancel_lfg(self):
+        async def cancel_lfg(self, interaction: Interaction = None):
             """|coro|
 
             Cancels the LFG post and calls View.stop()"""
             for buttons in self.children:
                 buttons.disabled = True
             await self.original_message.edit(content=f'Party for {self.activity_name} canceled.', view=self)
+            await interaction.response.send_message(content='Cancelled', ephemeral=True)
             self.stop()
             self.cog.remove_view(self)
 

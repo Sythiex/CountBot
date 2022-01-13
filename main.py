@@ -13,8 +13,9 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='goons learn to count'))
 
 extensions = [
-    'cog_dev',
-    'cog_parties'
+    'cog_parties',
+    'cog_misc',
+    'cog_dev'
 ]
 
 if __name__ == '__main__':
