@@ -1,6 +1,5 @@
 import os
 import discord
-from cog_parties import PartyCommands
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True)
@@ -13,7 +12,13 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='goons learn to count'))
 
+extensions = [
+    'cog_dev',
+    'cog_parties'
+]
 
-bot.add_cog(PartyCommands(bot))
+if __name__ == '__main__':
+    for extension in extensions:
+        bot.load_extension(extension)
 
 bot.run(os.getenv('token'))

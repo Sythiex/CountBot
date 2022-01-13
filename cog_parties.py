@@ -240,3 +240,7 @@ def get_mentions(party: list[Member]):
     for members in party:
         s += members.mention + ' '
     return s
+
+
+def setup(bot):
+    bot.add_cog(PartyCommands(bot))
