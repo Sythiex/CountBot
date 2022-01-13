@@ -46,8 +46,8 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         role = ''
         await self.start_lfg(ctx, activity_name, party_size, role)
 
-    @commands.command(aliases=['start', 'startparty'])
-    async def forcestart(self, ctx: Context):
+    @commands.command(aliases=['startparty'])
+    async def start(self, ctx: Context):
         """Start your parties in this channel"""
         for view in list(self.views):
             if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
