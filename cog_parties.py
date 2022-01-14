@@ -214,13 +214,15 @@ def refresh_embed(embed: Embed, party: list[Member], party_size: int):
     if party_size > 0:
         for x in range(party_size):
             if x < party_length:
-                embed.add_field(name=f'{x + 1}.', value=party[x].name, inline=False)
+                display_name = party[x].nick if party[x].nick is not None else party[x].name
+                embed.add_field(name=f'{x + 1}.', value=display_name, inline=False)
             else:
                 embed.add_field(name=f'{x + 1}.', value='------', inline=False)
     else:
         index = 0
         for x in range(party_length):
-            embed.add_field(name=f'{x + 1}.', value=party[x].name, inline=False)
+            display_name = party[x].nick if party[x].nick is not None else party[x].name
+            embed.add_field(name=f'{x + 1}.', value=display_name, inline=False)
             index += 1
         embed.add_field(name=f'{index + 1}.', value='------', inline=False)
     return embed

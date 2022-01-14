@@ -18,11 +18,11 @@ class MiscCommands(commands.Cog, name='Misc Commands'):
         self.last_pat_message = None
 
     @commands.slash_command(guild_ids=guilds)
-    async def pat(self, ctx: ApplicationContext):
+    async def pat(self, ctx: ApplicationContext, number: int = 1):
         """Pat CountBot"""
         if self.last_pat_message is not None:
             await self.last_pat_message.delete()
-        self.pat_count += 1
+        self.pat_count += number
         await ctx.interaction.response.send_message(f"{self.inflect_engine.number_to_words(self.pat_count).capitalize()} {'pat' if self.pat_count == 1 else 'pats'}, ha ha ha!")
         message_id = (await ctx.interaction.original_message()).id
         self.last_pat_message = await ctx.fetch_message(message_id)
