@@ -1,11 +1,11 @@
 import inflect
-from discord import ApplicationContext
+from discord import ApplicationContext, Option
 from discord.ext import commands
 
 guilds = [
-        194927673372442624,  # RELEASE THE KEKEN
-        928771354914873345  # Test
-    ]
+    194927673372442624,  # RELEASE THE KEKEN
+    928771354914873345  # Test
+]
 
 
 class MiscCommands(commands.Cog, name='Misc Commands'):
@@ -18,7 +18,7 @@ class MiscCommands(commands.Cog, name='Misc Commands'):
         self.last_pat_message = None
 
     @commands.slash_command(guild_ids=guilds)
-    async def pat(self, ctx: ApplicationContext, number: int = 1):
+    async def pat(self, ctx: ApplicationContext, number: Option(int, 'The number of times to pat', required=False, default=1)):
         """Pat CountBot"""
         if self.last_pat_message is not None:
             await self.last_pat_message.delete()

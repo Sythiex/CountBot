@@ -1,7 +1,7 @@
 from typing import Union
 
 import discord
-from discord import Embed, Colour, Member, Button, Interaction, Message, ApplicationContext
+from discord import Embed, Colour, Member, Button, Interaction, Message, ApplicationContext, Option
 from discord.ext import commands
 from discord.ui import View
 
@@ -38,12 +38,17 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         await self.start_lfg(ctx, activity_name, party_size, role, color)
 
     @commands.slash_command(guild_ids=guilds)
-    async def customparty(self, ctx: ApplicationContext, name: str, size: int):
+    async def customparty(self, ctx: ApplicationContext,
+                          name: Option(str, 'The name of the activity'),
+                          size: Option(int, 'The number of people to look for (use 0 for no limit, max 20)')):
         """Create a custom party"""
         activity_name = name
         party_size = size
         role = ''
-        await self.start_lfg(ctx, activity_name, party_size, role)
+        if 0 <= party_size <= 20:
+            await self.start_lfg(ctx, activity_name, party_size, role)
+        else:
+            await ctx.interaction.response.send_message(content="'size' must be a number between 0 and 20.", ephemeral=True)
 
     @commands.slash_command(guild_ids=guilds)
     async def start(self, ctx: ApplicationContext):
