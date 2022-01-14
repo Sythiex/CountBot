@@ -102,7 +102,8 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         embed = refresh_embed(embed, party, party_size)
         view = PartyCommands.PartyView(self, activity_name, party, party_size, role, embed, ctx.author)
         await ctx.interaction.response.send_message(f'{role} Count to {party_size if party_size > 0 else "*yes*"} for {activity_name}', view=view, embed=embed)
-        view.set_original_message(await ctx.interaction.original_message())
+        message_id = (await ctx.interaction.original_message()).id
+        view.set_original_message(await ctx.fetch_message(message_id))
 
     class PartyView(View):
         def __init__(self, cog, activity_name: str, party: list[Member], party_size: int, role: str, embed: Embed, party_owner: Member):

@@ -24,7 +24,9 @@ class MiscCommands(commands.Cog, name='Misc Commands'):
             await self.last_pat_message.delete()
         self.pat_count += 1
         await ctx.interaction.response.send_message(f"{self.inflect_engine.number_to_words(self.pat_count).capitalize()} {'pat' if self.pat_count == 1 else 'pats'}, ha ha ha!")
-        self.last_pat_message = await ctx.interaction.original_message()
+        message_id = (await ctx.interaction.original_message()).id
+        self.last_pat_message = await ctx.fetch_message(message_id)
+
         print(f'patter: {ctx.author}')
 
 
