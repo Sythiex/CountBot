@@ -1,9 +1,9 @@
 import os
 import discord
-from discord import AllowedMentions
+from discord import AllowedMentions, Intents
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True, intents=Intents.all())
 bot.allowed_mentions = AllowedMentions.all()
 bot.author_id = 194922571584634883
 bot.admin_role_id = 194927736240865281

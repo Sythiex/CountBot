@@ -1,14 +1,14 @@
 from typing import Union
 
 import discord
-from discord import Embed, Colour, Member, Button, Interaction, Message, ApplicationContext, Option
-from discord.ext import commands
+from discord import Embed, Colour, Member, Button, Interaction, Message, ApplicationContext, Option, Status
+from discord.ext import commands, tasks
 from discord.ui import View
 
 guilds = [
-        194927673372442624,  # RELEASE THE KEKEN
-        928771354914873345  # Test
-    ]
+    194927673372442624,  # RELEASE THE KEKEN
+    928771354914873345  # Test
+]
 
 
 class PartyCommands(commands.Cog, name='Party Commands'):
@@ -17,6 +17,8 @@ class PartyCommands(commands.Cog, name='Party Commands'):
     def __init__(self, bot):
         self.bot = bot
         self.views = []  # list of active PartyViews
+        self.offline_members = []
+        self.cull_offline.start()
 
     # Add new games by creating additional commands. set party_size to 0 to create a party with no player limit
     @commands.slash_command(guild_ids=guilds)
@@ -197,12 +199,43 @@ class PartyCommands(commands.Cog, name='Party Commands'):
             for buttons in self.children:
                 buttons.disabled = True
             await self.original_message.edit(content=f'Party for {self.activity_name} canceled.', view=self)
-            await interaction.response.send_message(content='Cancelled', ephemeral=True)
+            if interaction is not None and not interaction.response.is_done():
+                await interaction.response.send_message(content='Cancelled', ephemeral=True)
             self.stop()
             self.cog.remove_view(self)
 
         def set_original_message(self, message: Message):
             self.original_message = message
+
+    @tasks.loop(seconds=300)
+    async def cull_offline(self):
+        members = []
+        member_ids_to_remove = []
+        members_to_check = list(self.offline_members)
+        self.offline_members.clear()
+        for view in self.views:
+            for member in view.party:  # get actual member objects, needed for member.status to work
+                members.append(discord.utils.find(lambda m: m.id == member.id, member.guild.members))
+        members = list(set(members))  # remove duplicates
+        for member in members:
+            if member.status == Status.offline:
+                if member in members_to_check:  # if already on the watchlist, set for removal
+                    member_ids_to_remove.append(member.id)  # use ids to get around weird issue with remove_member()
+                else:  # add to the watchlist
+                    self.offline_members.append(member)
+                    print(f'{member.name} offline, adding to watch list')
+        for member_id in member_ids_to_remove:  # remove members
+            for view in self.views:
+                for member in view.party:
+                    if member.id == member_id:
+                        await view.remove_member(member)
+                        display_name = member.nick if member.nick is not None else member.name
+                        await view.original_message.reply(content=f'{display_name} is offline and has been removed.')
+                        print(f'{member.name} is offline and has been removed')
+
+    @cull_offline.before_loop
+    async def before_cull_offline(self):
+        await self.bot.wait_until_ready()
 
 
 def refresh_embed(embed: Embed, party: list[Member], party_size: int):
