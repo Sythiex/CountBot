@@ -42,15 +42,24 @@ class PartyCommands(commands.Cog, name='Party Commands'):
     @commands.slash_command(guild_ids=guilds)
     async def customparty(self, ctx: ApplicationContext,
                           name: Option(str, 'The name of the activity'),
-                          size: Option(int, 'The number of people to look for (use 0 for no limit, max 20)')):
+                          size: Option(int, 'The number of people to look for (use 0 for no limit, max 20)'),
+                          role: Option(str, 'The role to ping', required=False) = ''):
         """Create a custom party"""
         activity_name = name
         party_size = size
-        role = ''
-        if 0 <= party_size <= 20:
-            await self.start_lfg(ctx, activity_name, party_size, role)
-        else:
+        role_mention = ''
+        color = Embed.Empty
+        if role != '':
+            role_obj = discord.utils.find(lambda r: r.name == role, ctx.guild.roles)
+            if role_obj is not None:
+                role_mention = role_obj.mention
+                color = role_obj.color
+        if role != '' and role_mention == '':
+            await ctx.interaction.response.send_message(content=f'Could not find role "{role}"', ephemeral=True)
+        elif party_size < 0 or party_size > 20:
             await ctx.interaction.response.send_message(content="'size' must be a number between 0 and 20.", ephemeral=True)
+        else:
+            await self.start_lfg(ctx, activity_name, party_size, role_mention, color)
 
     @commands.slash_command(guild_ids=guilds)
     async def start(self, ctx: ApplicationContext):
