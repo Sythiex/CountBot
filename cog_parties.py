@@ -10,6 +10,10 @@ guilds = [
     928771354914873345  # Test
 ]
 
+cull_whitelist = [
+    326464273377132565  # tschery
+]
+
 
 class PartyCommands(commands.Cog, name='Party Commands'):
     """Create and start parties for games"""
@@ -18,7 +22,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         self.bot = bot
         self.views = []  # list of active PartyViews
         self.offline_members = []
-        self.cull_offline.start()
+        # self.cull_offline.start()
 
     # Add new games by creating additional commands. set party_size to 0 to create a party with no player limit
     @commands.slash_command(guild_ids=guilds)
@@ -216,7 +220,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         def set_original_message(self, message: Message):
             self.original_message = message
 
-    @tasks.loop(seconds=300)
+    @tasks.loop(seconds=600)
     async def cull_offline(self):
         members = []
         member_ids_to_remove = []
@@ -227,7 +231,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                 members.append(discord.utils.find(lambda m: m.id == member.id, member.guild.members))
         members = list(set(members))  # remove duplicates
         for member in members:
-            if member.status == Status.offline:
+            if member.status == Status.offline and member.id not in cull_whitelist:
                 if member in members_to_check:  # if already on the watchlist, set for removal
                     member_ids_to_remove.append(member.id)  # use ids to get around weird issue with remove_member()
                 else:  # add to the watchlist
