@@ -1,0 +1,1 @@
+docker build . --platform linux/amd64 --tag sythiex/count-bot:latest

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 
 import discord
 from discord import Embed, Colour, Member, Button, Interaction, Message, ApplicationContext, Option, Status
@@ -155,7 +155,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         view.set_original_message(await ctx.fetch_message(message_id))
 
     class PartyView(View):
-        def __init__(self, cog, activity_name: str, party: list[Member], party_size: int, role: str, embed: Embed, party_owner: Member):
+        def __init__(self, cog, activity_name: str, party: List[Member], party_size: int, role: str, embed: Embed, party_owner: Member):
             super().__init__(timeout=7200)  # 2 hours
             self.activity_name = activity_name
             self.party = party
@@ -279,7 +279,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         await self.bot.wait_until_ready()
 
 
-def refresh_embed(embed: Embed, party: list[Member], party_size: int):
+def refresh_embed(embed: Embed, party: List[Member], party_size: int):
     """
     Clears all fields in the embed, then adds fields based on the parameters.
 
@@ -305,14 +305,14 @@ def refresh_embed(embed: Embed, party: list[Member], party_size: int):
     return embed
 
 
-def in_party(member: Member, party: list[Member]):
+def in_party(member: Member, party: List[Member]):
     """Returns true if the party contains the member"""
     if party.count(member) > 0:
         return True
     return False
 
 
-def get_mentions(party: list[Member]):
+def get_mentions(party: List[Member]):
     """Returns a string with a mention for each party member"""
     s = ''
     for members in party:
