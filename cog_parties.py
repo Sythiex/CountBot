@@ -24,6 +24,15 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         self.offline_members = []
         # self.cull_offline.start()
 
+    def is_admin(self, member: Member):
+        """Returns true if the member is a bot admin"""
+        member_roles = []
+        for role in member.roles:
+            member_roles.append(role.id)
+        if set(member_roles).intersection(self.bot.admin_role_ids):
+            return True
+        return False
+
     # Add new games by creating additional commands. set party_size to 0 to create a party with no player limit
     @commands.slash_command(guild_ids=guilds)
     async def valorant(self, ctx: ApplicationContext):
@@ -70,7 +79,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         """Start your parties in this channel"""
         for view in list(self.views):
             if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
-                if ctx.author.id == view.party_owner.id or ctx.author.get_role(self.bot.admin_role_id) is not None:  # if command user is the party owner or admin
+                if ctx.author.id == view.party_owner.id or self.is_admin(ctx.author):  # if command user is the party owner or admin
                     await view.start_party(ctx.interaction)
         if not ctx.interaction.response.is_done():
             await ctx.interaction.response.send_message(content='You do not own any parties in this channel.', ephemeral=True)
@@ -80,15 +89,15 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         """Cancel your parties in this channel"""
         for view in list(self.views):
             if ctx.channel.id == view.original_message.channel.id:  # if view is in the same channel
-                if ctx.author.id == view.party_owner.id or ctx.author.get_role(self.bot.admin_role_id) is not None:  # if command user is the party owner or admin
+                if ctx.author.id == view.party_owner.id or self.is_admin(ctx.author):  # if command user is the party owner or admin
                     await view.cancel_lfg(ctx.interaction)
         if not ctx.interaction.response.is_done():
             await ctx.interaction.response.send_message(content='You do not own any parties in this channel.', ephemeral=True)
 
     @commands.slash_command(guild_ids=guilds)
     async def cancelall(self, ctx: ApplicationContext):
-        """[ADMIN ONLY] Cancel all parties in this server"""
-        if ctx.author.get_role(self.bot.admin_role_id) is not None:  # if command user is admin
+        """[ADMIN ONLY] Cancel all parties"""
+        if self.is_admin(ctx.author):
             for view in list(self.views):
                 if ctx.guild.id == view.original_message.guild.id:  # if view is in the same server
                     await view.cancel_lfg(ctx.interaction)
@@ -96,6 +105,26 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                 await ctx.interaction.response.send_message(content='No parties found.', ephemeral=True)
         else:
             await ctx.interaction.response.send_message(content='You do not have permission to use this command.', ephemeral=True)
+
+    @commands.slash_command(guild_ids=guilds)
+    async def remove(self, ctx: ApplicationContext, member_id: Option(str, 'The id of the member to remove')):
+        """[ADMIN ONLY] Remove member from all parties"""
+        try:
+            member_id = int(member_id)
+            if self.is_admin(ctx.author):
+                for view in self.views:
+                    if ctx.guild.id == view.original_message.guild.id:  # if view is in the same server
+                        for member in list(view.party):
+                            if member.id == member_id:
+                                await view.remove_member(member)
+                                if not ctx.interaction.response.is_done():
+                                    await ctx.interaction.response.send_message(content=f'Removed {get_display_name(member)}.', ephemeral=True)
+                if not ctx.interaction.response.is_done():
+                    await ctx.interaction.response.send_message(content=f"No member found with id '{member_id}'.", ephemeral=True)
+            else:
+                await ctx.interaction.response.send_message(content='You do not have permission to use this command.', ephemeral=True)
+        except ValueError:
+            await ctx.interaction.response.send_message(content=f"'{member_id}' is not a valid id.", ephemeral=True)
 
     def add_view(self, view):
         self.views.append(view)
@@ -148,7 +177,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                     await self.start_party()
                 else:  # notify the member they have been added
                     await interaction.followup.send(content='You have been added to the party.', ephemeral=True)
-            print(f'{member} clicked a button; current party: {self.party}')
+            print(f'{member} clicked join')
 
         @discord.ui.button(label="Leave", style=discord.ButtonStyle.red, emoji='<:madnpc:863675310650163200>')
         async def leave_button_callback(self, button: Button, interaction: Interaction):
@@ -157,7 +186,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
             if in_party(member, self.party):  # if the member is in the party, remove them and notify them they have been removed
                 await self.remove_member(member)
                 await interaction.followup.send(content='You have been removed from the party.', ephemeral=True)
-            print(f'{member} clicked a button; current party: {self.party}')
+            print(f'{member} clicked leave')
 
         async def add_member(self, member: Member):
             """
@@ -242,8 +271,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                 for member in view.party:
                     if member.id == member_id:
                         await view.remove_member(member)
-                        display_name = member.nick if member.nick is not None else member.name
-                        await view.original_message.reply(content=f'{display_name} is offline and has been removed.')
+                        await view.original_message.reply(content=f'{get_display_name(member)} is offline and has been removed.')
                         print(f'{member.name} is offline and has been removed')
 
     @cull_offline.before_loop
@@ -265,15 +293,13 @@ def refresh_embed(embed: Embed, party: list[Member], party_size: int):
     if party_size > 0:
         for x in range(party_size):
             if x < party_length:
-                display_name = party[x].nick if party[x].nick is not None else party[x].name
-                embed.add_field(name=f'{x + 1}.', value=display_name, inline=False)
+                embed.add_field(name=f'{x + 1}.', value=get_display_name(party[x]), inline=False)
             else:
                 embed.add_field(name=f'{x + 1}.', value='------', inline=False)
     else:
         index = 0
         for x in range(party_length):
-            display_name = party[x].nick if party[x].nick is not None else party[x].name
-            embed.add_field(name=f'{x + 1}.', value=display_name, inline=False)
+            embed.add_field(name=f'{x + 1}.', value=get_display_name(party[x]), inline=False)
             index += 1
         embed.add_field(name=f'{index + 1}.', value='------', inline=False)
     return embed
@@ -292,6 +318,11 @@ def get_mentions(party: list[Member]):
     for members in party:
         s += members.mention + ' '
     return s
+
+
+def get_display_name(member: Member) -> str:
+    """Returns the member's nickname, or name if none"""
+    return member.nick if member.nick is not None else member.name
 
 
 def setup(bot):

@@ -5,8 +5,10 @@ from discord.ext import commands
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True, intents=Intents.all())
 bot.allowed_mentions = AllowedMentions.all()
-bot.author_id = 194922571584634883
-bot.admin_role_id = 194927736240865281
+bot.author_id = 194922571584634883  # Sythiex
+bot.admin_role_ids = [194927736240865281,  # Sythiex role
+                      931360107403546644  # testrole
+                      ]
 
 
 @bot.event
@@ -14,10 +16,10 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='goons learn to count'))
 
+
 extensions = [
     'cog_parties',
-    'cog_misc',
-    'cog_dev'
+    'cog_misc'
 ]
 
 if __name__ == '__main__':
