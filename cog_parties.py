@@ -141,7 +141,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         :param ctx: the context from the command
         :param activity_name: the name of the activity
         :param party_size: the number of members to look for. set to 0 for a party with no max size
-        :param role: the role to mention when posting a lfg message, passed as a string in the format '<@&role_id)>' (can be left empty)
+        :param role: the role to mention when posting a lfg message, passed as a string in the format '<@&role_id>' (can be left empty)
         :param embed_color: the embed color, can be a hex color code or discord.Colour
         """
         party = []
@@ -242,7 +242,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                 buttons.disabled = True
             await self.original_message.edit(content=f'Party for {self.activity_name} canceled.', view=self)
             if interaction is not None and not interaction.response.is_done():
-                await interaction.response.send_message(content='Cancelled', ephemeral=True)
+                await interaction.response.send_message(content='Cancelled.', ephemeral=True)
             self.stop()
             self.cog.remove_view(self)
 
