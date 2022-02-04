@@ -56,7 +56,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
     async def customparty(self, ctx: ApplicationContext,
                           name: Option(str, 'The name of the activity'),
                           size: Option(int, 'The number of people to look for (use 0 for no limit, max 20)'),
-                          role: Option(str, 'The role to ping', required=False) = ''):
+                          role: Option(str, "The role to ping (name only, no '@')", required=False) = ''):
         """Create a custom party"""
         activity_name = name
         party_size = size
@@ -83,6 +83,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                     await view.start_party(ctx.interaction)
         if not ctx.interaction.response.is_done():
             await ctx.interaction.response.send_message(content='You do not own any parties in this channel.', ephemeral=True)
+        print(f"{ctx.author} used /start")
 
     @commands.slash_command(guild_ids=guilds)
     async def cancel(self, ctx: ApplicationContext):
@@ -93,6 +94,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                     await view.cancel_lfg(ctx.interaction)
         if not ctx.interaction.response.is_done():
             await ctx.interaction.response.send_message(content='You do not own any parties in this channel.', ephemeral=True)
+        print(f"{ctx.author} used /cancel")
 
     @commands.slash_command(guild_ids=guilds)
     async def cancelall(self, ctx: ApplicationContext):
@@ -105,6 +107,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                 await ctx.interaction.response.send_message(content='No parties found.', ephemeral=True)
         else:
             await ctx.interaction.response.send_message(content='You do not have permission to use this command.', ephemeral=True)
+        print(f"{ctx.author} used /cancelall")
 
     @commands.slash_command(guild_ids=guilds)
     async def remove(self, ctx: ApplicationContext, member_id: Option(str, 'The id of the member to remove')):
@@ -119,6 +122,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                                 await view.remove_member(member)
                                 if not ctx.interaction.response.is_done():
                                     await ctx.interaction.response.send_message(content=f'Removed {get_display_name(member)}.', ephemeral=True)
+                                    print(f"{ctx.author} used /remove on {get_display_name(member)}")
                 if not ctx.interaction.response.is_done():
                     await ctx.interaction.response.send_message(content=f"No member found with id '{member_id}'.", ephemeral=True)
             else:
@@ -153,6 +157,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         await ctx.interaction.response.send_message(f'{role} Count to {party_size if party_size > 0 else "*yes*"} for {activity_name}', view=view, embed=embed)
         message_id = (await ctx.interaction.original_message()).id
         view.set_original_message(await ctx.fetch_message(message_id))
+        print(f"{ctx.author} started a party for {activity_name}")
 
     class PartyView(View):
         def __init__(self, cog, activity_name: str, party: List[Member], party_size: int, role: str, embed: Embed, party_owner: Member):
@@ -177,7 +182,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
                     await self.start_party()
                 else:  # notify the member they have been added
                     await interaction.followup.send(content='You have been added to the party.', ephemeral=True)
-            print(f'{member} clicked join')
+            print(f'{member} clicked Join on party for {self.activity_name}')
 
         @discord.ui.button(label="Leave", style=discord.ButtonStyle.red, emoji='<:madnpc:863675310650163200>')
         async def leave_button_callback(self, button: Button, interaction: Interaction):
@@ -186,7 +191,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
             if in_party(member, self.party):  # if the member is in the party, remove them and notify them they have been removed
                 await self.remove_member(member)
                 await interaction.followup.send(content='You have been removed from the party.', ephemeral=True)
-            print(f'{member} clicked leave')
+            print(f'{member} clicked Leave on party for {self.activity_name}')
 
         async def add_member(self, member: Member):
             """
@@ -249,6 +254,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         def set_original_message(self, message: Message):
             self.original_message = message
 
+    # not implemented
     @tasks.loop(seconds=600)
     async def cull_offline(self):
         members = []
