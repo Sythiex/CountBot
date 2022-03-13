@@ -53,6 +53,15 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         await self.start_lfg(ctx, activity_name, party_size, role, color)
 
     @commands.slash_command(guild_ids=guilds)
+    async def wow(self, ctx: ApplicationContext):
+        """Start a party for World of Warcraft"""
+        activity_name = 'World of Warcraft'
+        party_size = 0
+        role = '<@&742215164631187507>'
+        color = 0x18528b
+        await self.start_lfg(ctx, activity_name, party_size, role, color)
+
+    @commands.slash_command(guild_ids=guilds)
     async def customparty(self, ctx: ApplicationContext,
                           name: Option(str, 'The name of the activity'),
                           size: Option(int, 'The number of people to look for (use 0 for no limit, max 20)'),
