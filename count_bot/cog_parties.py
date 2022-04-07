@@ -53,10 +53,11 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         await self.start_lfg(ctx, activity_name, party_size, role, color)
 
     @commands.slash_command(guild_ids=guilds)
-    async def wow(self, ctx: ApplicationContext):
+    async def wow(self, ctx: ApplicationContext,
+                  mythic_plus: Option(bool, 'Is the party for Mythic+?') = False):
         """Start a party for World of Warcraft"""
-        activity_name = 'World of Warcraft'
-        party_size = 0
+        activity_name = 'World of Warcraft' if not mythic_plus else 'Mythic+'
+        party_size = 0 if not mythic_plus else 5
         role = '<@&742215164631187507>'
         color = 0x18528b
         await self.start_lfg(ctx, activity_name, party_size, role, color)
