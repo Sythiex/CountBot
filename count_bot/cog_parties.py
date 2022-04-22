@@ -73,7 +73,7 @@ class PartyCommands(commands.Cog, name='Party Commands'):
         role_mention = ''
         color = Embed.Empty
         if role != '':
-            role_obj = discord.utils.find(lambda r: r.name == role, ctx.guild.roles)
+            role_obj = discord.utils.find(lambda r: r.name.lower() == role.lower(), ctx.guild.roles)
             if role_obj is not None:
                 role_mention = role_obj.mention
                 color = role_obj.color
